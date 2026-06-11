@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="robots" content="noindex,nofollow,noarchive">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -415,6 +414,31 @@ async function runBetfinder() {
           + '</div></div>';
       });
     }
+
+    // Beste pick per wedstrijd
+    var bestPerMatch = {};
+    allPicks.forEach(function(p) {
+      if (!bestPerMatch[p.eventId] || p.conf > bestPerMatch[p.eventId].conf) {
+        bestPerMatch[p.eventId] = p;
+      }
+    });
+    var perMatchList = Object.keys(bestPerMatch).map(function(k) { return bestPerMatch[k]; });
+    perMatchList.sort(function(a, b) { return b.conf - a.conf; });
+
+    html += '<div style="margin-top:1.5rem;margin-bottom:1.5rem">'
+      + '<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:.75rem">Beste pick per wedstrijd</div>';
+    perMatchList.forEach(function(p) {
+      var confColor = p.conf >= 50 ? 'var(--accent)' : p.conf >= 30 ? 'var(--warn)' : 'var(--muted)';
+      html += '<div class="single-row">'
+        + '<div><div style="font-weight:600">' + p.match + '</div><div style="font-size:10px;color:var(--muted)">' + p.date + '</div></div>'
+        + '<div style="font-weight:600;color:var(--text)">' + p.name + '</div>'
+        + '<div style="font-family:var(--mono)">' + p.odds.toFixed(2) + '</div>'
+        + '<div>' + edgeBadge(+p.cEdge.toFixed(1)) + '</div>'
+        + '<div class="combo-conf" style="color:' + confColor + '">' + p.conf + '%'
+        + (p.agree ? ' <span style="color:var(--accent);font-size:9px">&#9679;</span>' : '') + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
 
     // Losse value picks
     html += '<div class="bf-singles">'

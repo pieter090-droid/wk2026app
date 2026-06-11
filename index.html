@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c26;--border:#2a2a3a;
+  --accent:#00e5a0;--accent2:#7c6dfa;--danger:#ff4d6d;--warn:#ffb800;
+  --text:#f0f0f8;--muted:#6b6b85;--mono:'DM Mono',monospace;--sans:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh}
+#setup{padding:2rem;max-width:520px;margin:0 auto}
+.setup-title{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px}
+.setup-title span{color:var(--accent)}
+.setup-sub{color:var(--muted);margin-bottom:2rem;font-size:13px}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border .2s}
+.field input:focus{border-color:var(--accent)}
+.btn{width:100%;padding:12px;background:var(--accent);color:#000;font-family:var(--sans);font-weight:700;font-size:14px;border:none;border-radius:8px;cursor:pointer;transition:opacity .2s;margin-top:.5rem}
+.btn:hover{opacity:.85}
+.note{font-size:11px;color:var(--muted);margin-top:1rem;line-height:1.9;padding:12px 14px;background:var(--surface);border-radius:8px;border-left:2px solid var(--accent2)}
+.note a{color:var(--accent);text-decoration:none}
+#app{display:none}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.logo{font-weight:700;font-size:16px}.logo span{color:var(--accent)}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.source-badge{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(0,229,160,.08);padding:4px 10px;border-radius:20px;border:1px solid rgba(0,229,160,.2)}
+.refresh-btn{padding:6px 14px;font-size:12px;font-weight:600;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:6px;cursor:pointer;font-family:var(--sans);transition:all .2s}
+.refresh-btn:hover{background:rgba(0,229,160,.1)}
+.settings-btn{padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--muted);font-size:14px}
+#list-view{padding:1.5rem}
+#detail-view{display:none;padding:1.5rem;max-width:1100px;margin:0 auto}
+.group-header{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent2);padding:1rem 0 .5rem;border-bottom:1px solid var(--border);margin-bottom:.75rem}
+.matches-grid{display:flex;flex-direction:column;gap:6px;margin-bottom:1.5rem}
+.match-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.9rem 1.25rem;cursor:pointer;transition:all .2s;display:grid;grid-template-columns:1fr auto 1fr auto;align-items:center;gap:1rem}
+.match-card:hover{border-color:var(--accent);background:var(--surface2);transform:translateX(2px)}
+.team-name{font-weight:600;font-size:14px}
+.team-name.away{text-align:right}
+.vs{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center}
+.match-meta{text-align:right;min-width:100px}
+.match-date{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.match-odds{font-family:var(--mono);font-size:10px;margin-top:3px;color:var(--muted)}
+.loading{text-align:center;padding:3rem;color:var(--muted)}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.3);border-radius:8px;padding:1rem;color:var(--danger);font-size:13px;margin-bottom:1rem}
+.empty{text-align:center;padding:3rem;color:var(--muted);font-size:13px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:1.5rem;transition:color .2s}
+.back-btn:hover{color:var(--text)}
+.match-header{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem}
+.match-header-top{display:flex;align-items:center;justify-content:center;gap:2rem;margin-bottom:.75rem}
+.mh-team{font-size:22px;font-weight:700;flex:1}
+.mh-team.away{text-align:right}
+.mh-score{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:center;min-width:40px}
+.match-header-meta{display:flex;justify-content:center;gap:.75rem;font-family:var(--mono);font-size:11px;color:var(--muted);flex-wrap:wrap}
+.meta-pill{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:3px 10px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:1rem}
+.card h3{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.prob-row{margin-bottom:10px}
+.prob-label{display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px}
+.prob-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.prob-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.fill-home{background:var(--accent2)}.fill-draw{background:var(--warn)}.fill-away{background:var(--accent)}
+.odds-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.odds-row:last-child{border-bottom:none}
+.odds-label{font-size:12px;color:var(--muted)}
+.odds-val{font-family:var(--mono);font-size:13px;font-weight:500}
+.value-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.value-row:last-child{border-bottom:none}
+.value-market{font-size:13px;font-weight:500}
+.value-detail{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
+.edge-badge{font-family:var(--mono);font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px;display:inline-block}
+.edge-pos{background:rgba(0,229,160,.12);color:var(--accent)}
+.edge-neg{background:rgba(255,77,109,.12);color:var(--danger)}
+.edge-neu{background:rgba(107,107,133,.12);color:var(--muted)}
+.rec{font-size:11px;margin-top:2px}
+.rec.bet{color:var(--accent)}.rec.skip{color:var(--danger)}.rec.neutral{color:var(--muted)}
+.coach-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.coach-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.coach-team-lbl{font-size:11px;color:var(--muted);margin-bottom:8px}
+.coach-stat{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)}
+.coach-stat:last-child{border-bottom:none}
+.coach-stat span:first-child{color:var(--muted)}
+.coach-stat span:last-child{font-family:var(--mono)}
+.style-pills{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.style-pill{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:10px;background:rgba(124,109,250,.1);color:var(--accent2);border:1px solid rgba(124,109,250,.2)}
+.stat-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.stat-lbl{color:var(--muted)}.stat-val{font-family:var(--mono)}
+.form-dot{width:26px;height:26px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.fw{background:rgba(0,229,160,.15);color:var(--accent)}
+.fd{background:rgba(255,184,0,.15);color:var(--warn)}
+.fl{background:rgba(255,77,109,.15);color:var(--danger)}
+.h2h-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.h2h-row:last-child{border-bottom:none}
+.h2h-winner{font-size:10px;padding:2px 6px;border-radius:4px}
+.wh{background:rgba(124,109,250,.15);color:var(--accent2)}
+.wa{background:rgba(0,229,160,.15);color:var(--accent)}
+.wd{background:rgba(255,184,0,.15);color:var(--warn)}
+.tab-bar{display:flex;gap:0;padding:0 1.5rem;border-bottom:1px solid var(--border);background:var(--surface)}
+.tab-btn{padding:10px 20px;font-size:13px;font-weight:600;font-family:var(--sans);background:none;border:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn:hover{color:var(--text)}
+#betfinder-view{display:none;padding:1.5rem;max-width:900px;margin:0 auto}
+.bf-form{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:1.5rem}
+.bf-field label{display:block;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.bf-field input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none}
+.bf-field input:focus{border-color:var(--accent)}
+.bf-go{padding:8px 20px;background:var(--accent);color:#000;font-weight:700;font-family:var(--sans);font-size:13px;border:none;border-radius:6px;cursor:pointer;height:36px}
+.bf-go:hover{opacity:.85}
+.combo-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:1rem}
+.combo-card h4{font-size:13px;font-weight:700;margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center}
+.combo-rank{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px}
+.combo-leg{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.combo-leg:last-child{border-bottom:none}
+.combo-match{color:var(--muted);font-size:11px}
+.combo-pick{font-weight:600}
+.combo-odds{font-family:var(--mono);color:var(--accent)}
+.combo-conf{font-family:var(--mono);font-size:11px}
+.combo-total{display:flex;justify-content:space-between;padding-top:10px;margin-top:8px;border-top:1px solid var(--border);font-family:var(--mono);font-size:13px;font-weight:600}
+.bf-singles{margin-top:1.5rem}
+.single-row{display:grid;grid-template-columns:1fr 1fr auto auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.single-row:first-child{border-top:1px solid var(--border)}
+@media(max-width:700px){
+  .three-col,.two-col{grid-template-columns:1fr}
+  .match-card{grid-template-columns:1fr auto 1fr}
+  .match-meta{display:none}
+  .coach-grid{grid-template-columns:1fr}
+  .bf-form{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <div style="margin-bottom:2rem;padding-top:1rem">
+    <div class="setup-title">WK 2026 <span>Betting</span></div>
+    <div class="setup-sub">Voer je gratis BSD API key in om te beginnen</div>
+  </div>
+  <div class="field">
+    <label>BSD API Key</label>
+    <input id="bsd-key" type="password" placeholder="abc123...">
+  </div>
+  <button class="btn" onclick="startApp()">Dashboard openen</button>
+  <div class="note">
+    Gratis key via <a href="https://sports.bzzoiro.com/register/" target="_blank">sports.bzzoiro.com/register</a><br>
+    Alle 64 WK wedstrijden &middot; odds &middot; model &middot; coaches &middot; vorm &middot; h2h<br>
+    Geen Supabase, geen The Odds API &mdash; volledig gratis
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="logo">WK 2026 <span>Betting</span></div>
+    <div class="topbar-right">
+      <div class="source-badge">BSD &middot; gratis</div>
+      <button class="refresh-btn" onclick="loadMatches()">&#8635; Refresh</button>
+      <button class="settings-btn" onclick="showSetup()">&#9881;</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('matches')" id="tab-matches">&#9917; Wedstrijden</button>
+    <button class="tab-btn" onclick="switchTab('betfinder')" id="tab-betfinder">&#127919; Betfinder</button>
+  </div>
+  <div id="list-view">
+    <div id="list-error"></div>
+    <div id="matches-container" style="padding:1.5rem">
+      <div class="loading"><div class="spinner"></div>Wedstrijden laden...</div>
+    </div>
+  </div>
+  <div id="detail-view">
+    <div class="back-btn" onclick="showList()">&#8592; Terug</div>
+    <div id="detail-content"></div>
+  </div>
+  <div id="betfinder-view">
+    <div style="margin-bottom:1rem">
+      <div style="font-size:20px;font-weight:700;margin-bottom:4px">Combo <span style="color:var(--accent)">Betfinder</span></div>
+      <div style="font-size:12px;color:var(--muted)">Vind de beste combo's op basis van Poisson+ &amp; CatBoost ML confidence</div>
+    </div>
+    <div class="bf-form">
+      <div class="bf-field"><label>Van</label><input type="date" id="bf-from"></div>
+      <div class="bf-field"><label>Tot</label><input type="date" id="bf-to"></div>
+      <div class="bf-field"><label>Target odds</label><input type="number" id="bf-odds" value="3.00" step="0.5" min="1.5"></div>
+      <div class="bf-field"><label>Wedstrijden</label><input type="number" id="bf-legs" value="3" min="2" max="6"></div>
+      <button class="bf-go" onclick="runBetfinder()">Zoeken</button>
+    </div>
+    <div id="bf-results"></div>
+  </div>
+</div>
+
+<script>
+var BSD_BASE = 'https://sports.bzzoiro.com/api';
+var CACHE_MS = 30 * 60 * 1000;
+var BSD_KEY = '';
+var allEvents = [];
+var detailCache = {};
+var internationalMatches = [];
+
+function save(k, v) { try { sessionStorage.setItem(k, v); } catch(e) {} }
+function load(k) { try { return sessionStorage.getItem(k); } catch(e) { return null; } }
+
+function cleanKey(k) {
+  return (k || '').replace(/[^\x20-\x7E]/g, '').trim();
+}
+
+function bsdGet(path) {
+  var key = cleanKey(BSD_KEY);
+  return fetch(BSD_BASE + path, {
+    headers: { 'Authorization': 'Token ' + key }
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('BSD ' + r.status + ': ' + t.slice(0, 100)); });
+    return r.json();
+  });
+}
+
+function startApp() {
+  BSD_KEY = cleanKey(document.getElementById('bsd-key').value);
+  if (!BSD_KEY) { alert('Vul je BSD API key in'); return; }
+  save('bsd_key', BSD_KEY);
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadMatches();
+}
+
+function showSetup() {
+  document.getElementById('setup').style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+}
+
+function showList() {
+  document.getElementById('list-view').style.display = 'block';
+  document.getElementById('detail-view').style.display = 'none';
+  document.getElementById('betfinder-view').style.display = 'none';
+  document.getElementById('tab-matches').classList.add('active');
+  document.getElementById('tab-betfinder').classList.remove('active');
+}
+
+function switchTab(tab) {
+  document.getElementById('list-view').style.display = tab === 'matches' ? 'block' : 'none';
+  document.getElementById('detail-view').style.display = 'none';
+  document.getElementById('betfinder-view').style.display = tab === 'betfinder' ? 'block' : 'none';
+  document.getElementById('tab-matches').classList.toggle('active', tab === 'matches');
+  document.getElementById('tab-betfinder').classList.toggle('active', tab === 'betfinder');
+  // Set default dates if empty
+  if (tab === 'betfinder') {
+    var fromEl = document.getElementById('bf-from');
+    var toEl = document.getElementById('bf-to');
+    if (!fromEl.value) {
+      var today = new Date();
+      fromEl.value = today.toISOString().slice(0, 10);
+      var week = new Date(today.getTime() + 7 * 86400000);
+      toEl.value = week.toISOString().slice(0, 10);
+    }
+  }
+}
+
+async function runBetfinder() {
+  var dateFrom = document.getElementById('bf-from').value;
+  var dateTo = document.getElementById('bf-to').value;
+  var targetOdds = parseFloat(document.getElementById('bf-odds').value) || 3.0;
+  var numLegs = parseInt(document.getElementById('bf-legs').value) || 3;
+  numLegs = Math.max(2, Math.min(numLegs, 6));
+
+  if (!dateFrom || !dateTo) { alert('Vul beide datums in'); return; }
+
+  var resEl = document.getElementById('bf-results');
+  resEl.innerHTML = '<div class="loading"><div class="spinner"></div>Wedstrijden ophalen en modellen draaien...</div>';
+
+  try {
+    // Stap 1: Haal wedstrijden op in het datumbereik
+    var eventsData = await bsdGet('/v2/events/?league_id=27&date_from=' + dateFrom + '&date_to=' + dateTo + '&limit=50');
+    var events = Array.isArray(eventsData) ? eventsData : (eventsData.results || []);
+    events = events.filter(function(e) { return e.status === 'notstarted'; });
+
+    if (!events.length) {
+      resEl.innerHTML = '<div class="empty">Geen toekomstige wedstrijden gevonden in dit datumbereik.</div>';
+      return;
+    }
+
+    resEl.innerHTML = '<div class="loading"><div class="spinner"></div>' + events.length + ' wedstrijden gevonden, modellen draaien...</div>';
+
+    // Stap 2: Per wedstrijd detail + ML ophalen
+    var enriched = await Promise.all(events.map(async function(ev) {
+      try {
+        var detail = await bsdGet('/events/' + ev.id + '/');
+        var mlData = null;
+        try {
+          var mlR = await fetch(BSD_BASE + '/v2/events/' + ev.id + '/prediction/', {
+            headers: { 'Authorization': 'Token ' + cleanKey(BSD_KEY) }
+          });
+          if (mlR.ok) mlData = await mlR.json();
+        } catch(e) {}
+
+        var oH = detail.odds_home, oD = detail.odds_draw, oA = detail.odds_away;
+        var oOv = detail.odds_over_25, oUn = detail.odds_under_25;
+        var oBY = detail.odds_btts_yes, oBN = detail.odds_btts_no;
+        var hf = detail.home_form, af = detail.away_form;
+        var hc = detail.home_coach, ac = detail.away_coach;
+        var h2h = detail.head_to_head;
+
+        var M = buildModel(oH, oD, oA, hf, af, hc, ac, h2h);
+
+        // ML kansen
+        var mlMr = mlData && mlData.markets && mlData.markets.match_result || {};
+        var mlOu = mlData && mlData.markets && mlData.markets.over_under || {};
+        var mlBt = mlData && mlData.markets && mlData.markets.btts || {};
+        var mlRec = mlData && mlData.recommendations || {};
+        var hasML = !!(mlData && mlData.markets);
+
+        // Genereer picks per wedstrijd
+        var matchLabel = detail.home_team + ' vs ' + detail.away_team;
+        var dt = new Date(detail.event_date);
+        var dateStr = dt.toLocaleDateString('nl-NL', { day:'numeric', month:'short' });
+        var picks = [];
+
+        function addPick(name, poisP, mlP, odds, type) {
+          if (!odds) return;
+          var pE = edge(poisP, odds);
+          var mE = (mlP !== null) ? edge(mlP, odds) : null;
+          var cEdge, cProb, agree;
+          if (pE !== null && mE !== null) {
+            cEdge = pE * 0.45 + mE * 0.55;
+            cProb = poisP * 0.45 + mlP * 0.55;
+            agree = (pE > 0 && mE > 0);
+          } else if (pE !== null) {
+            cEdge = pE;
+            cProb = poisP;
+            agree = false;
+          } else {
+            return;
+          }
+
+          // Confidence score (simplified version of agent)
+          var conf = 0;
+          conf += Math.min(cEdge * 2, 25);
+          if (agree) conf += 20;
+          conf += Math.min(cProb * 18, 12);
+          // ML recommendation bonus
+          if (hasML) {
+            var mlOK = false;
+            if (type === 'home' && mlRec.favorite === 'H' && mlRec.bet_favorite) mlOK = true;
+            if (type === 'away' && mlRec.favorite === 'A' && mlRec.bet_favorite) mlOK = true;
+            if (type === 'over' && mlRec.over_25) mlOK = true;
+            if (type === 'btts_yes' && mlRec.btts) mlOK = true;
+            if (mlOK) conf += 10;
+          }
+          conf = Math.min(Math.round(conf), 99);
+
+          if (cEdge > 0) {
+            picks.push({
+              match: matchLabel, date: dateStr, eventId: ev.id,
+              name: name, odds: odds, conf: conf, cEdge: cEdge, cProb: cProb, agree: agree, type: type
+            });
+          }
+        }
+
+        addPick(detail.home_team, M.hw, mlMr.prob_home != null ? mlMr.prob_home/100 : null, oH, 'home');
+        addPick('Gelijkspel', M.dr, mlMr.prob_draw != null ? mlMr.prob_draw/100 : null, oD, 'draw');
+        addPick(detail.away_team, M.aw, mlMr.prob_away != null ? mlMr.prob_away/100 : null, oA, 'away');
+        addPick('Over 2.5', M.ov, mlOu.prob_over_25 != null ? mlOu.prob_over_25/100 : null, oOv, 'over');
+        addPick('Under 2.5', 1-M.ov, mlOu.prob_over_25 != null ? 1-mlOu.prob_over_25/100 : null, oUn, 'under');
+        addPick('BTTS Ja', M.bt, mlBt.prob_yes != null ? mlBt.prob_yes/100 : null, oBY, 'btts_yes');
+        addPick('BTTS Nee', 1-M.bt, mlBt.prob_yes != null ? 1-mlBt.prob_yes/100 : null, oBN, 'btts_no');
+
+        return picks;
+      } catch(e) {
+        return [];
+      }
+    }));
+
+    // Flatten alle picks
+    var allPicks = [];
+    enriched.forEach(function(p) { allPicks = allPicks.concat(p); });
+    allPicks.sort(function(a, b) { return b.conf - a.conf; });
+
+    if (!allPicks.length) {
+      resEl.innerHTML = '<div class="empty">Geen value picks gevonden in dit datumbereik.</div>';
+      return;
+    }
+
+    // Stap 3: Genereer combo's
+    var combos = generateCombos(allPicks, numLegs, targetOdds);
+
+    // Stap 4: Render resultaten
+    var html = '';
+
+    // Combo suggesties
+    html += '<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:.75rem">Top 3 Combo\'s &middot; target ' + targetOdds.toFixed(2) + ' odds &middot; ' + numLegs + ' legs</div>';
+
+    if (!combos.length) {
+      html += '<div class="combo-card"><div style="color:var(--muted);font-size:12px">Geen geldige combo gevonden. Probeer een ander target of meer wedstrijden.</div></div>';
+    } else {
+      combos.slice(0, 3).forEach(function(combo, idx) {
+        var rankColors = ['var(--accent)', 'var(--accent2)', 'var(--warn)'];
+        var rankLabels = ['BESTE COMBO', '2E OPTIE', '3E OPTIE'];
+        html += '<div class="combo-card" style="border-left:3px solid ' + rankColors[idx] + '">'
+          + '<h4><span>' + rankLabels[idx] + '</span><span class="combo-odds">' + combo.totalOdds.toFixed(2) + 'x</span></h4>';
+        combo.legs.forEach(function(leg) {
+          html += '<div class="combo-leg">'
+            + '<div><div class="combo-pick">' + leg.name + '</div><div class="combo-match">' + leg.match + ' &middot; ' + leg.date + '</div></div>'
+            + '<div style="font-family:var(--mono);font-size:12px">' + leg.odds.toFixed(2) + '</div>'
+            + '<div>' + edgeBadge(+leg.cEdge.toFixed(1)) + '</div>'
+            + '<div class="combo-conf" style="color:' + (leg.conf >= 50 ? 'var(--accent)' : leg.conf >= 30 ? 'var(--warn)' : 'var(--muted)') + '">' + leg.conf + '%</div>'
+            + '</div>';
+        });
+        html += '<div class="combo-total">'
+          + '<span>Gem. confidence: ' + combo.avgConf.toFixed(0) + '%' + (combo.allAgree ? ' &middot; <span style="color:var(--accent)">alle modellen eens</span>' : '') + '</span>'
+          + '<span style="color:var(--accent)">' + combo.totalOdds.toFixed(2) + 'x</span>'
+          + '</div></div>';
+      });
+    }
+
+    // Losse value picks
+    html += '<div class="bf-singles">'
+      + '<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:.75rem">Alle value picks &middot; gesorteerd op confidence</div>';
+
+    allPicks.slice(0, 20).forEach(function(p) {
+      html += '<div class="single-row">'
+        + '<div><div style="font-weight:600">' + p.name + '</div><div style="font-size:10px;color:var(--muted)">' + p.match + '</div></div>'
+        + '<div style="font-size:10px;color:var(--muted)">' + p.date + '</div>'
+        + '<div style="font-family:var(--mono)">' + p.odds.toFixed(2) + '</div>'
+        + '<div>' + edgeBadge(+p.cEdge.toFixed(1)) + '</div>'
+        + '<div class="combo-conf" style="color:' + (p.conf >= 50 ? 'var(--accent)' : p.conf >= 30 ? 'var(--warn)' : 'var(--muted)') + '">' + p.conf + '%'
+        + (p.agree ? ' <span style="color:var(--accent);font-size:9px">&#9679;</span>' : '') + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+
+    resEl.innerHTML = html;
+  } catch(e) {
+    resEl.innerHTML = '<div class="error-box">&#9888; ' + e.message + '</div>';
+  }
+}
+
+function generateCombos(picks, numLegs, targetOdds) {
+  // Max 1 pick per wedstrijd, pak top picks gesorteerd op confidence
+  var topPicks = [];
+  var usedEvents = {};
+  picks.forEach(function(p) {
+    if (!usedEvents[p.eventId]) {
+      // Per wedstrijd meerdere picks toestaan in de pool, maar max 1 per combo
+      topPicks.push(p);
+    }
+  });
+  // Beperk pool tot top 25 voor performance
+  topPicks = topPicks.slice(0, 25);
+
+  var tolerance = 0.40; // ±40% van target odds
+  var minOdds = targetOdds * (1 - tolerance);
+  var maxOdds = targetOdds * (1 + tolerance);
+
+  // Genereer alle combinaties van numLegs uit topPicks (max 1 per event)
+  var results = [];
+  function combine(start, current, usedIds) {
+    if (current.length === numLegs) {
+      var totalOdds = 1;
+      current.forEach(function(p) { totalOdds *= p.odds; });
+      if (totalOdds >= minOdds && totalOdds <= maxOdds) {
+        var totalConf = 0;
+        var allAgree = true;
+        current.forEach(function(p) { totalConf += p.conf; if (!p.agree) allAgree = false; });
+        results.push({
+          legs: current.slice(),
+          totalOdds: totalOdds,
+          avgConf: totalConf / current.length,
+          totalConf: totalConf,
+          allAgree: allAgree
+        });
+      }
+      return;
+    }
+    for (var i = start; i < topPicks.length; i++) {
+      if (!usedIds[topPicks[i].eventId]) {
+        usedIds[topPicks[i].eventId] = true;
+        current.push(topPicks[i]);
+        combine(i + 1, current, usedIds);
+        current.pop();
+        delete usedIds[topPicks[i].eventId];
+      }
+    }
+  }
+  combine(0, [], {});
+
+  // Sorteer op gemiddelde confidence (hoogste eerst), dan op dichtstbij target odds
+  results.sort(function(a, b) {
+    // Primair: confidence
+    var confDiff = b.avgConf - a.avgConf;
+    if (Math.abs(confDiff) > 3) return confDiff;
+    // Secundair: dichtstbij target
+    return Math.abs(a.totalOdds - targetOdds) - Math.abs(b.totalOdds - targetOdds);
+  });
+
+  return results.slice(0, 3);
+}
+
+var INTL_LEAGUES = [27, 31, 58, 59, 60, 61, 62, 63, 64, 65];
+var INTL_YEARS = ['2023-01-01', '2024-01-01', '2025-01-01', '2026-01-01'];
+
+async function loadInternationalMatches() {
+  var today = new Date().toISOString().slice(0, 10);
+  var calls = [];
+  INTL_LEAGUES.forEach(function(league) {
+    INTL_YEARS.forEach(function(yearStart, i) {
+      var yearEnd = i < INTL_YEARS.length - 1 ? INTL_YEARS[i + 1] : today;
+      calls.push(
+        bsdGet('/v2/events/?league=' + league + '&date_from=' + yearStart + '&date_to=' + yearEnd + '&status=finished&limit=500')
+          .then(function(d) { return Array.isArray(d) ? d : (d.results || []); })
+          .catch(function() { return []; })
+      );
+    });
+  });
+  var results = await Promise.all(calls);
+  var seen = {};
+  var merged = [];
+  results.forEach(function(page) {
+    page.forEach(function(e) {
+      if (!seen[e.id] && e.status === 'finished') {
+        seen[e.id] = true;
+        merged.push(e);
+      }
+    });
+  });
+  internationalMatches = merged.sort(function(a, b) {
+    return new Date(b.event_date) - new Date(a.event_date);
+  });
+}
+
+async function loadMatches() {
+  document.getElementById('matches-container').innerHTML = '<div class="loading"><div class="spinner"></div>WK wedstrijden + historische data ophalen...</div>';
+  document.getElementById('list-error').innerHTML = '';
+  try {
+    var wkData = await bsdGet('/events/?league=27&limit=200');
+    allEvents = wkData.results || [];
+    renderMatches();
+    await loadInternationalMatches(allEvents);
+    detailCache = {};
+  } catch(e) {
+    document.getElementById('list-error').innerHTML = '<div class="error-box">&#9888; ' + e.message + '</div>';
+    document.getElementById('matches-container').innerHTML = '<div class="empty">Controleer je BSD API key.</div>';
+  }
+}
+
+function renderMatches() {
+  if (!allEvents.length) {
+    document.getElementById('matches-container').innerHTML = '<div class="empty">Geen wedstrijden gevonden.</div>';
+    return;
+  }
+  var sorted = allEvents.slice().sort(function(a, b) {
+    return new Date(a.event_date) - new Date(b.event_date);
+  });
+  var groups = {};
+  sorted.forEach(function(e) {
+    var g = e.group_name || 'Overig';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(e);
+  });
+  var html = '';
+  Object.keys(groups).forEach(function(group) {
+    html += '<div class="group-header">' + group + '</div><div class="matches-grid">';
+    groups[group].forEach(function(e) {
+      var dt = new Date(e.event_date);
+      var ds = dt.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
+      var isLive = e.status === 'inprogress' || e.status === 'live';
+      var isDone = e.status === 'finished';
+      var vsStr = (isDone || isLive)
+        ? '<span style="color:' + (isLive ? 'var(--accent)' : 'var(--text)') + '">' + (e.home_score || 0) + '&ndash;' + (e.away_score || 0) + '</span>'
+        : 'vs';
+      var oddsStr = e.odds_home
+        ? '<span style="color:var(--accent2)">' + e.odds_home + '</span> &middot; <span style="color:var(--warn)">' + e.odds_draw + '</span> &middot; <span style="color:var(--accent)">' + e.odds_away + '</span>'
+        : 'Odds n.b.';
+      html += '<div class="match-card" onclick="showDetail(' + e.id + ')">'
+        + '<div class="team-name">' + e.home_team + '</div>'
+        + '<div class="vs">' + vsStr + '</div>'
+        + '<div class="team-name away">' + e.away_team + '</div>'
+        + '<div class="match-meta">'
+        + '<div class="match-date">' + (isLive ? '&#128308; LIVE' : ds) + '</div>'
+        + '<div class="match-odds">' + oddsStr + '</div>'
+        + '</div></div>';
+    });
+    html += '</div>';
+  });
+  document.getElementById('matches-container').innerHTML = html;
+}
+
+function showDetail(id) {
+  document.getElementById('list-view').style.display = 'none';
+  document.getElementById('detail-view').style.display = 'block';
+  document.getElementById('detail-content').innerHTML = '<div class="loading"><div class="spinner"></div>Data ophalen...</div>';
+  var ev = null;
+  for (var i = 0; i < allEvents.length; i++) {
+    if (allEvents[i].id === id) { ev = allEvents[i]; break; }
+  }
+  if (!ev) { document.getElementById('detail-content').innerHTML = '<div class="error-box">Niet gevonden</div>'; return; }
+
+  var cached = detailCache[id];
+  if (cached && (Date.now() - cached.t < CACHE_MS)) {
+    renderDetail(cached.data.detail, cached.data.homeForm, cached.data.awayForm, cached.data.ml);
+    return;
+  }
+
+  // Stap 1: haal detail op voor team IDs
+  bsdGet('/events/' + id + '/').then(function(detail) {
+    // Zoek team IDs uit alle mogelijke bronnen
+    var hId = (ev.home_team_obj && ev.home_team_obj.id) || ev.home_team_id
+           || (detail.home_team_obj && detail.home_team_obj.id) || detail.home_team_id || null;
+    var aId = (ev.away_team_obj && ev.away_team_obj.id) || ev.away_team_id
+           || (detail.away_team_obj && detail.away_team_obj.id) || detail.away_team_id || null;
+
+    console.log('Team IDs — home:', hId, 'away:', aId);
+
+    // Stap 2: haal ML + recente wedstrijden parallel op
+    function fetchTeamForm(teamId) {
+      if (!teamId) return Promise.resolve([]);
+      return fetch(BSD_BASE + '/v2/events/?team_id=' + teamId + '&status=finished&date_from=2024-01-01&limit=10', {
+        headers: { 'Authorization': 'Token ' + cleanKey(BSD_KEY) }
+      }).then(function(r) {
+        if (!r.ok) return [];
+        return r.json().then(function(d) {
+          var arr = Array.isArray(d) ? d : (d.results || []);
+          return arr.filter(function(e) { return e.id !== id; })
+            .sort(function(a, b) { return new Date(b.event_date) - new Date(a.event_date); })
+            .slice(0, 6);
+        });
+      }).catch(function(err) { console.warn('Form fetch error:', err); return []; });
+    }
+
+    var mlPromise = fetch(BSD_BASE + '/v2/events/' + id + '/prediction/', {
+      headers: { 'Authorization': 'Token ' + cleanKey(BSD_KEY) }
+    }).then(function(r) {
+      if (!r.ok) return null;
+      return r.json();
+    }).catch(function() { return null; });
+
+    return Promise.all([mlPromise, fetchTeamForm(hId), fetchTeamForm(aId)]).then(function(res) {
+      var mlData = res[0];
+      var homeForm = res[1];
+      var awayForm = res[2];
+
+      console.log('Home form:', homeForm.length, homeForm);
+      console.log('Away form:', awayForm.length, awayForm);
+
+      var data = { detail: detail, homeForm: homeForm, awayForm: awayForm, ml: mlData };
+      detailCache[id] = { data: data, t: Date.now() };
+      renderDetail(data.detail, data.homeForm, data.awayForm, data.ml);
+    });
+  }).catch(function(e) {
+    document.getElementById('detail-content').innerHTML = '<div class="error-box">&#9888; ' + e.message + '</div>';
+  });
+}
+
+function compileAIAgentTip(M, d, eH, eD, eA, eOv, eUn, eBY, eBN, ml) {
+  var oH = d.odds_home, oD = d.odds_draw, oA = d.odds_away;
+  var oOv = d.odds_over_25, oUn = d.odds_under_25, oBY = d.odds_btts_yes, oBN = d.odds_btts_no;
+
+  // =============================================
+  // STAP 1: ML edges berekenen (API → 0-100)
+  // =============================================
+  var mlMr = ml && ml.markets && ml.markets.match_result || {};
+  var mlOu = ml && ml.markets && ml.markets.over_under || {};
+  var mlBt = ml && ml.markets && ml.markets.btts || {};
+  var mlRec = ml && ml.recommendations || {};
+  var hasML = !!(ml && ml.markets);
+
+  var mlEH = edge(mlMr.prob_home != null ? mlMr.prob_home/100 : null, oH);
+  var mlED = edge(mlMr.prob_draw != null ? mlMr.prob_draw/100 : null, oD);
+  var mlEA = edge(mlMr.prob_away != null ? mlMr.prob_away/100 : null, oA);
+  var mlEOv = edge(mlOu.prob_over_25 != null ? mlOu.prob_over_25/100 : null, oOv);
+  var mlEUn = edge(mlOu.prob_over_25 != null ? (1-mlOu.prob_over_25/100) : null, oUn);
+  var mlEBY = edge(mlBt.prob_yes != null ? mlBt.prob_yes/100 : null, oBY);
+  var mlEBN = edge(mlBt.prob_yes != null ? (1-mlBt.prob_yes/100) : null, oBN);
+
+  // =============================================
+  // STAP 2: Composite edge per markt
+  // Poisson 45% / ML 55% als beide beschikbaar
+  // =============================================
+  var markets = [
+    { name: d.home_team + ' Winst', pE: eH, mE: mlEH, pP: M.hw, mP: mlMr.prob_home != null ? mlMr.prob_home/100 : null, odds: oH, type: 'win', team: 'home' },
+    { name: 'Gelijkspel',           pE: eD, mE: mlED, pP: M.dr, mP: mlMr.prob_draw != null ? mlMr.prob_draw/100 : null, odds: oD, type: 'draw', team: null },
+    { name: d.away_team + ' Winst', pE: eA, mE: mlEA, pP: M.aw, mP: mlMr.prob_away != null ? mlMr.prob_away/100 : null, odds: oA, type: 'win', team: 'away' },
+    { name: 'Over 2.5 Goals',       pE: eOv, mE: mlEOv, pP: M.ov, mP: mlOu.prob_over_25 != null ? mlOu.prob_over_25/100 : null, odds: oOv, type: 'over' },
+    { name: 'Under 2.5 Goals',      pE: eUn, mE: mlEUn, pP: 1-M.ov, mP: mlOu.prob_over_25 != null ? 1-mlOu.prob_over_25/100 : null, odds: oUn, type: 'under' },
+    { name: 'BTTS: Ja',             pE: eBY, mE: mlEBY, pP: M.bt, mP: mlBt.prob_yes != null ? mlBt.prob_yes/100 : null, odds: oBY, type: 'btts_yes' },
+    { name: 'BTTS: Nee',            pE: eBN, mE: mlEBN, pP: 1-M.bt, mP: mlBt.prob_yes != null ? 1-mlBt.prob_yes/100 : null, odds: oBN, type: 'btts_no' }
+  ];
+
+  markets.forEach(function(m) {
+    if (m.pE !== null && m.mE !== null) {
+      m.cEdge = m.pE * 0.45 + m.mE * 0.55;
+      m.cProb = m.pP * 0.45 + m.mP * 0.55;
+      m.agree = (m.pE > 0 && m.mE > 0);
+    } else if (m.pE !== null) {
+      m.cEdge = m.pE;
+      m.cProb = m.pP;
+      m.agree = false;
+    } else {
+      m.cEdge = null;
+      m.cProb = m.pP;
+      m.agree = false;
+    }
+  });
+
+  // =============================================
+  // STAP 3: Filter viable picks
+  // =============================================
+  var viable = markets.filter(function(m) {
+    return m.cEdge !== null && m.cEdge > 3.0 && m.cProb > 0.20;
+  });
+
+  if (!viable.length) {
+    return {
+      tip: "Sla deze wedstrijd over",
+      sub: "Geen markt met voldoende composite edge (Poisson+ & ML).",
+      confidence: 12, badge: "GEEN VALUE", color: "var(--muted)", stake: "0.0%", signals: []
+    };
+  }
+
+  viable.sort(function(a, b) { return b.cEdge - a.cEdge; });
+  var best = viable[0];
+
+  // =============================================
+  // STAP 4: Signaal-gedreven confidence
+  // =============================================
+  var signals = [];
+  var conf = 0;
+
+  // S1: Edge sterkte (0-25 pts)
+  conf += Math.min(best.cEdge * 2, 25);
+
+  // S2: Model agreement (0-20 pts)
+  if (best.agree) {
+    signals.push('Models eens');
+    conf += 20;
+  }
+
+  // S3: Kans-niveau (0-12 pts)
+  conf += Math.min(best.cProb * 18, 12);
+
+  // S4: ML recommendation bevestigt (0-10 pts)
+  if (hasML) {
+    var mlOK = false;
+    if (best.team === 'home' && mlRec.favorite === 'H' && mlRec.bet_favorite) mlOK = true;
+    if (best.team === 'away' && mlRec.favorite === 'A' && mlRec.bet_favorite) mlOK = true;
+    if (best.type === 'over' && mlRec.over_25) mlOK = true;
+    if (best.type === 'btts_yes' && mlRec.btts) mlOK = true;
+    if (best.type === 'win' && mlRec.winner) mlOK = true;
+    if (mlOK) { signals.push('ML bevestigt'); conf += 10; }
+  }
+
+  // S5: Vorm (0-10 pts)
+  var hf = d.home_form, af = d.away_form;
+  if (hf && hf.form_string && af && af.form_string) {
+    var hW = (hf.form_string.match(/W/g)||[]).length;
+    var hL = (hf.form_string.match(/L/g)||[]).length;
+    var aW = (af.form_string.match(/W/g)||[]).length;
+    var aL = (af.form_string.match(/L/g)||[]).length;
+
+    if (best.team === 'home' && hW >= 3 && aL >= 2) { signals.push('Vorm thuis sterk'); conf += 10; }
+    else if (best.team === 'away' && aW >= 3 && hL >= 2) { signals.push('Vorm uit sterk'); conf += 10; }
+
+    // Goals-tempo voor over/under/btts
+    if ((best.type === 'over' || best.type === 'under' || best.type === 'btts_yes' || best.type === 'btts_no')
+        && hf.matches_played > 0 && af.matches_played > 0) {
+      var totG = (hf.goals_scored_last_n||0) + (hf.goals_conceded_last_n||0) + (af.goals_scored_last_n||0) + (af.goals_conceded_last_n||0);
+      var avgG = totG / (hf.matches_played + af.matches_played);
+      if (best.type === 'over' && avgG > 2.8) { signals.push('Hoog goaltempo'); conf += 8; }
+      else if (best.type === 'under' && avgG < 2.0) { signals.push('Laag goaltempo'); conf += 8; }
+      else if (best.type === 'btts_yes' && hf.goals_scored_last_n/hf.matches_played > 1 && af.goals_scored_last_n/af.matches_played > 1) { signals.push('Beide scoren regelmatig'); conf += 7; }
+    }
+  }
+
+  // S6: H2H (0-8 pts)
+  var h2h = d.head_to_head;
+  if (h2h && h2h.total_matches && h2h.total_matches >= 3) {
+    var n = h2h.total_matches;
+    if (best.team === 'home' && (h2h.home_wins||0)/n > 0.5) { signals.push('H2H dominant'); conf += 8; }
+    else if (best.team === 'away' && (h2h.away_wins||0)/n > 0.5) { signals.push('H2H dominant'); conf += 8; }
+
+    if (h2h.matches && h2h.matches.length >= 3) {
+      var ovCnt = 0, btCnt = 0;
+      h2h.matches.forEach(function(m) {
+        if (((m.home_score||0)+(m.away_score||0)) > 2.5) ovCnt++;
+        if ((m.home_score||0) > 0 && (m.away_score||0) > 0) btCnt++;
+      });
+      if (best.type === 'over' && ovCnt/h2h.matches.length > 0.6) { signals.push('H2H hoge scores'); conf += 6; }
+      else if (best.type === 'under' && ovCnt/h2h.matches.length < 0.3) { signals.push('H2H lage scores'); conf += 6; }
+      else if (best.type === 'btts_yes' && btCnt/h2h.matches.length > 0.65) { signals.push('H2H beide scoren'); conf += 6; }
+    }
+  }
+
+  // S7: Speelstijl matchup — kwalitatief, geen dubbeltelling met buildModel
+  var hc = d.home_coach, ac = d.away_coach;
+  if (hc && ac) {
+    var allStyles = (hc.top_styles||[]).concat(ac.top_styles||[]);
+    var atkStyles = allStyles.filter(function(s) { return /attack|direct|counter|wing.play|fast.build/i.test(s); }).length;
+    var defStyles = allStyles.filter(function(s) { return /defen|possess|slow.build|park.bus|compact/i.test(s); }).length;
+
+    if ((best.type === 'over' || best.type === 'btts_yes') && atkStyles >= 3) { signals.push('Aanvallende stijlen'); conf += 7; }
+    if ((best.type === 'under' || best.type === 'btts_no') && defStyles >= 3) { signals.push('Defensieve stijlen'); conf += 7; }
+
+    // Mismatch: aanvallend vs defensief → meer goals door openheid
+    if ((best.type === 'over') && hc.profile !== ac.profile &&
+        ((hc.profile === 'attacking' && ac.defensive_line === 'high') || (ac.profile === 'attacking' && hc.defensive_line === 'high'))) {
+      signals.push('Tactische mismatch'); conf += 5;
+    }
+  }
+
+  conf = Math.min(Math.round(conf), 99);
+
+  // =============================================
+  // STAP 5: Badge + Kelly
+  // =============================================
+  var badge = "MEDIUM ADVISORY";
+  var color = "var(--warn)";
+  if (conf >= 75) { badge = "STRONG BUY \uD83D\uDD25"; color = "var(--accent)"; }
+  else if (conf < 40) { badge = "SPECULATIEF"; color = "var(--accent2)"; }
+
+  var kellyRaw = (best.cProb * best.odds - 1) / (best.odds - 1);
+  var kellyF = Math.max(Math.min(kellyRaw / 4, 0.05), 0.005);
+  if (best.agree) kellyF = Math.min(kellyF * 1.25, 0.05);
+  var stakeStr = (kellyF * 100).toFixed(1) + "%";
+
+  // Subtekst
+  var sub = 'Composite: +' + best.cEdge.toFixed(1) + '%';
+  if (best.agree) sub += ' (Poisson +' + best.pE.toFixed(1) + '% | ML +' + best.mE.toFixed(1) + '%)';
+  else if (hasML) sub += ' | ML data beschikbaar';
+
+  return {
+    tip: best.name, sub: sub, confidence: conf, badge: badge, color: color, stake: stakeStr, signals: signals
+  };
+}
+
+function renderML(ml, home, away, odds) {
+  if (!ml || !ml.markets) {
+    return '<div class="card" style="border-left:3px solid var(--accent2);opacity:.6">'
+      + '<h3>CatBoost ML Model</h3>'
+      + '<div style="font-size:12px;color:var(--muted);padding:.5rem 0">Geen ML-voorspelling beschikbaar voor deze wedstrijd.</div>'
+      + '</div>';
+  }
+  var mr = ml.markets.match_result || {};
+  var xg = ml.markets.expected_goals || {};
+  var ou = ml.markets.over_under || {};
+  var btts = ml.markets.btts || {};
+  var score = ml.markets.score || {};
+  var rec = ml.recommendations || {};
+  var o = odds || {};
+
+  // API returns probabilities as 0-100 (e.g. 59.1), not 0-1
+  var pH = mr.prob_home != null ? (+mr.prob_home).toFixed(1) + '%' : '—';
+  var pD = mr.prob_draw != null ? (+mr.prob_draw).toFixed(1) + '%' : '—';
+  var pA = mr.prob_away != null ? (+mr.prob_away).toFixed(1) + '%' : '—';
+  var xgH = xg.home != null ? (+xg.home).toFixed(2) : '—';
+  var xgA = xg.away != null ? (+xg.away).toFixed(2) : '—';
+  var bttsPct = btts.prob_yes != null ? (+btts.prob_yes).toFixed(1) + '%' : '—';
+
+  // Edge berekeningen: edge(prob_0to1, odds) — deel door 100 want API geeft 0-100
+  var mlEdgeH  = edge(mr.prob_home != null ? mr.prob_home / 100 : null, o.home);
+  var mlEdgeD  = edge(mr.prob_draw != null ? mr.prob_draw / 100 : null, o.draw);
+  var mlEdgeA  = edge(mr.prob_away != null ? mr.prob_away / 100 : null, o.away);
+  var mlEdgeOv = edge(ou.prob_over_25 != null ? ou.prob_over_25 / 100 : null, o.over25);
+  var mlEdgeUn = edge(ou.prob_over_25 != null ? (1 - ou.prob_over_25 / 100) : null, o.under25);
+  var mlEdgeBY = edge(btts.prob_yes != null ? btts.prob_yes / 100 : null, o.bttsYes);
+  var mlEdgeBN = edge(btts.prob_yes != null ? (1 - btts.prob_yes / 100) : null, o.bttsNo);
+
+  var recPills = '';
+  if (rec.bet_favorite) recPills += '<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.25)">&#10003; Favoriet</span> ';
+  if (rec.over_25)      recPills += '<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.25)">&#10003; Over 2.5</span> ';
+  if (rec.over_15)      recPills += '<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.25)">&#10003; Over 1.5</span> ';
+  if (rec.btts)         recPills += '<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.25)">&#10003; BTTS</span> ';
+  if (!recPills)        recPills  = '<span style="font-size:11px;color:var(--muted)">Geen aanbevolen bets</span>';
+
+  var favLabel = rec.favorite === 'H' ? home : rec.favorite === 'A' ? away : null;
+  var favProb  = rec.favorite_prob != null ? (+rec.favorite_prob).toFixed(1) + '%' : null;
+
+  return '<div class="card" style="border-left:3px solid var(--accent2)">'
+    + '<h3 style="margin-bottom:.75rem">&#129302; CatBoost ML Model <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px;font-family:var(--mono)">v2/predictions</span></h3>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">'
+    + '<div>'
+    + '<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Winstkansen</div>'
+    + probRow(home,       pH, (mr.prob_home || 0) / 100, 'fill-home', 'var(--accent2)')
+    + probRow('Gelijkspel', pD, (mr.prob_draw || 0) / 100, 'fill-draw', 'var(--warn)')
+    + probRow(away,       pA, (mr.prob_away || 0) / 100, 'fill-away', 'var(--accent)')
+    + '</div>'
+    + '<div>'
+    + '<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Expected Goals &amp; Markten</div>'
+    + statRow('xG ' + home, xgH)
+    + statRow('xG ' + away, xgA)
+    + (ou.prob_over_25 != null ? statRow('Over 2.5', (+ou.prob_over_25).toFixed(1)+'%') : '')
+    + (ou.prob_over_15 != null ? statRow('Over 1.5', (+ou.prob_over_15).toFixed(1)+'%') : '')
+    + statRow('BTTS ja', bttsPct)
+    + (score.most_likely ? statRow('Meest waarschijnlijk', score.most_likely) : '')
+    + (favLabel && favProb ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Favoriet: <strong style="color:var(--text)">' + favLabel + '</strong> (' + favProb + ')</div>' : '')
+    + '</div>'
+    + '</div>'
+
+    // ML Value Analyse
+    + '<div style="padding-top:10px;border-top:1px solid var(--border);margin-bottom:10px">'
+    + '<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">ML Value Analyse</div>'
+    + valueRow(home + ' wint', pH, fO(o.home), mlEdgeH)
+    + valueRow('Gelijkspel', pD, fO(o.draw), mlEdgeD)
+    + valueRow(away + ' wint', pA, fO(o.away), mlEdgeA)
+    + valueRow('Over 2.5', ou.prob_over_25 != null ? (+ou.prob_over_25).toFixed(1)+'%' : '—', fO(o.over25), mlEdgeOv)
+    + valueRow('Under 2.5', ou.prob_over_25 != null ? (100 - ou.prob_over_25).toFixed(1)+'%' : '—', fO(o.under25), mlEdgeUn)
+    + valueRow('BTTS ja', bttsPct, fO(o.bttsYes), mlEdgeBY)
+    + valueRow('BTTS nee', btts.prob_yes != null ? (100 - btts.prob_yes).toFixed(1)+'%' : '—', fO(o.bttsNo), mlEdgeBN)
+    + '</div>'
+
+    // Aanbevelingen
+    + '<div style="padding-top:10px;border-top:1px solid var(--border)">'
+    + '<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">ML Aanbevelingen</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:6px">' + recPills + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderDetail(d, homeFormMatches, awayFormMatches, ml) {
+  homeFormMatches = homeFormMatches || [];
+  awayFormMatches = awayFormMatches || [];
+  var home = d.home_team;
+  var away = d.away_team;
+  var dt = new Date(d.event_date);
+  var ds = dt.toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
+
+  var oH  = d.odds_home; var oD  = d.odds_draw; var oA  = d.odds_away;
+  var oOv = d.odds_over_25; var oUn = d.odds_under_25;
+  var oBY = d.odds_btts_yes; var oBN = d.odds_btts_no;
+
+  var hf = d.home_form; var af = d.away_form; var h2h = d.head_to_head;
+  var hc = d.home_coach; var ac = d.away_coach;
+  var M = buildModel(oH, oD, oA, hf, af, hc, ac, h2h);
+
+  var eH  = edge(M.hw, oH); var eD  = edge(M.dr, oD); var eA  = edge(M.aw, oA);
+  var eOv = edge(M.ov, oOv); var eUn = edge(1 - M.ov, oUn);
+  var eBY = edge(M.bt, oBY); var eBN = edge(1 - M.bt, oBN);
+
+  var ai = compileAIAgentTip(M, d, eH, eD, eA, eOv, eUn, eBY, eBN, ml);
+
+  var venue = d.venue;
+  var weather = weatherLabel(d.weather_code);
+
+  var headerMeta = '<span class="meta-pill">&#128197; ' + ds + '</span>';
+  if (d.group_name) headerMeta += '<span class="meta-pill">&#127942; ' + d.group_name + '</span>';
+  if (venue) headerMeta += '<span class="meta-pill">&#127967; ' + venue.name + ', ' + venue.city + '</span>';
+  if (d.temperature_c !== null && d.temperature_c !== undefined) headerMeta += '<span class="meta-pill">' + weather + ' ' + d.temperature_c + '&deg;C</span>';
+
+  var scoreHtml = (d.home_score !== null)
+    ? '<span style="font-size:26px;font-weight:700;color:var(--text)">' + d.home_score + '&ndash;' + d.away_score + '</span>'
+    : '<span style="color:var(--muted)">vs</span>';
+
+  var implH = oH ? impP(oH, oD, oA, 'h') : null;
+
+  var html = ''
+    + '<div class="match-header">'
+    + '<div class="match-header-top">'
+    + '<div class="mh-team">' + home + '</div>'
+    + '<div class="mh-score">' + scoreHtml + '</div>'
+    + '<div class="mh-team away">' + away + '</div>'
+    + '</div>'
+    + '<div class="match-header-meta">' + headerMeta + '</div>'
+    + '</div>'
+
+    // AI AGENT TIPS COMPONENT
+    + '<div class="card" style="border: 1px solid ' + ai.color + '; background: linear-gradient(135deg, var(--surface) 0%, rgba(20,20,35,0.8) 100%); margin-bottom: 1.25rem; padding: 1.5rem; border-radius: 12px;">'
+    + '  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    + '  <div>'
+    + '    <div style="font-size: 10px; font-family: var(--mono); color: ' + ai.color + '; border: 1px solid ' + ai.color + '; padding: 2px 8px; display: inline-block; border-radius: 4px; margin-bottom: 8px; font-weight:600;">' + ai.badge + '</div>'
+    + '    <h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; color: var(--text);">' + ai.tip + '</h2>'
+    + '    <div style="font-size: 12px; color: var(--muted); font-family: var(--sans);">' + ai.sub + '</div>'
+    + '  </div>'
+    + '  <div style="text-align: right; display:flex; gap: 1.5rem; align-items:center;">'
+    + '    <div style="border-right: 1px solid var(--border); padding-right: 1.5rem;">'
+    + '      <div style="font-size: 9px; text-transform: uppercase; color: var(--muted); letter-spacing:1px; margin-bottom:2px;">Confidence</div>'
+    + '      <div style="font-family: var(--mono); font-size: 26px; font-weight: 700; color: ' + ai.color + ';">' + ai.confidence + '%</div>'
+    + '    </div>'
+    + '    <div>'
+    + '      <div style="font-size: 9px; text-transform: uppercase; color: var(--muted); letter-spacing:1px; margin-bottom:2px;">Kelly Stake</div>'
+    + '      <div style="font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--text);">' + ai.stake + '</div>'
+    + '    </div>'
+    + '  </div>'
+    + '  </div>'
+    + (ai.signals && ai.signals.length ? '<div style="display:flex;flex-wrap:wrap;gap:5px;padding-top:10px;border-top:1px solid var(--border)">'
+      + ai.signals.map(function(s) {
+          return '<span style="font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:10px;background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.2)">&#10003; ' + s + '</span>';
+        }).join('')
+      + '</div>' : '')
+    + '</div>'
+
+    // ML MODEL COMPONENT (CatBoost via v2/predictions)
+    + renderML(ml, home, away, { home: oH, draw: oD, away: oA, over25: oOv, under25: oUn, bttsYes: oBY, bttsNo: oBN })
+
+    + '<div class="three-col">'
+    + '<div class="card"><h3>Model voorspelling</h3>'
+    + probRow(home, fP(M.hw), M.hw, 'fill-home', 'var(--accent2)')
+    + probRow('Gelijkspel', fP(M.dr), M.dr, 'fill-draw', 'var(--warn)')
+    + probRow(away, fP(M.aw), M.aw, 'fill-away', 'var(--accent)')
+    + '<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px">'
+    + statRow('Verwacht', M.lH.toFixed(2) + '&ndash;' + M.lA.toFixed(2) + ' goals')
+    + statRow('Over 2.5', fP(M.ov))
+    + statRow('BTTS ja', fP(M.bt))
+    + '</div>'
+    + '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">'
+    + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Meest waarschijnlijke scores</div>'
+    + M.top.map(function(s) {
+        return '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:3px">'
+          + '<span>' + s.i + '&ndash;' + s.j + '</span>'
+          + '<span style="color:var(--muted)">' + (s.p * 100).toFixed(1) + '%</span></div>';
+      }).join('')
+    + '</div></div>'
+
+    + '<div class="card"><h3>Bookmaker odds</h3>'
+    + oddsRow(home + ' wint', fO(oH))
+    + oddsRow('Gelijkspel', fO(oD))
+    + oddsRow(away + ' wint', fO(oA))
+    + oddsRow('Over 2.5', fO(oOv))
+    + oddsRow('Under 2.5', fO(oUn))
+    + oddsRow('BTTS ja', fO(oBY))
+    + oddsRow('BTTS nee', fO(oBN))
+    + (implH ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)">Impliciete kansen:<br>'
+      + '<span style="color:var(--accent2)">' + home + ' ' + implH + '%</span> &middot; '
+      + '<span style="color:var(--warn)">Gelijk ' + impP(oH, oD, oA, 'd') + '%</span> &middot; '
+      + '<span style="color:var(--accent)">' + away + ' ' + impP(oH, oD, oA, 'a') + '%</span></div>'
+      : '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Geen odds beschikbaar</div>')
+    + '</div>'
+
+    + '<div class="card"><h3>Value analyse</h3>'
+    + valueRow(home + ' wint', fP(M.hw), fO(oH), eH)
+    + valueRow('Gelijkspel', fP(M.dr), fO(oD), eD)
+    + valueRow(away + ' wint', fP(M.aw), fO(oA), eA)
+    + valueRow('Over 2.5', fP(M.ov), fO(oOv), eOv)
+    + valueRow('Under 2.5', fP(1 - M.ov), fO(oUn), eUn)
+    + valueRow('BTTS ja', fP(M.bt), fO(oBY), eBY)
+    + valueRow('BTTS nee', fP(1 - M.bt), fO(oBN), eBN)
+    + '</div>'
+    + '</div>'
+
+    + '<div class="card"><h3>Coaches &amp; tactiek</h3>'
+    + '<div class="coach-grid">'
+    + renderCoach(d.home_coach, home)
+    + renderCoach(d.away_coach, away)
+    + '</div></div>'
+
+    + '<div class="two-col">'
+    + '<div class="card"><h3>' + home + ' &middot; recente wedstrijden</h3>' + renderFormMatches(homeFormMatches, home, d.home_team_obj ? d.home_team_obj.id : null, hf) + '</div>'
+    + '<div class="card"><h3>' + away + ' &middot; recente wedstrijden</h3>' + renderFormMatches(awayFormMatches, away, d.away_team_obj ? d.away_team_obj.id : null, af) + '</div>'
+    + '</div>'
+
+    + '<div class="card"><h3>Head-to-head</h3>' + renderH2H(h2h, home, away) + '</div>'
+
+    + '<div class="card" style="border-left: 3px solid var(--accent2); background: var(--surface2); padding: 1.25rem; margin-top: 1rem;">'
+    + '<h3 style="color:var(--text); margin-bottom: 0.5rem;">&#129302; Hoe werkt het Poisson+ model?</h3>'
+    + '<div style="font-size:12px; line-height:1.7; color:var(--muted)">'
+    + '<p style="margin-bottom:8px;">Dixon-Coles Poisson model met 6 inputlagen:</p>'
+    + '<ul style="margin-left:18px; margin-bottom:10px; list-style-type: disc;">'
+    + '<li><strong>1. Marktbasis (&lambda;):</strong> Impliciete kansen uit bookmaker-odds, zonder thuisvoordeel (WK = neutraal terrein). Basis: <strong style="color:var(--accent2)">' + home + ' ' + M.lH.toFixed(2) + '</strong> vs <strong style="color:var(--accent)">' + away + ' ' + M.lA.toFixed(2) + ' xG</strong>.</li>'
+    + '<li><strong>2. Aanval + Verdediging:</strong> &lambda; = (aanvalskracht + defensie-zwakte tegenstander) / 2. Weging: 60% markt, 40% vorm.</li>'
+    + '<li><strong>3. Coach-tactiek:</strong> Pressing, profiel, defensielijn en formatie be&iuml;nvloeden de verwachte goals. Twee aanvallende coaches &rarr; hogere &lambda;\'s.</li>'
+    + '<li><strong>4. Dixon-Coles:</strong> Correlatiefactor (&rho;) corrigeert de onderschatting van 0-0, 1-0 en 0-1 in standaard Poisson.</li>'
+    + '<li><strong>5. Score-matrix:</strong> Alle uitslagen 0-0 t/m 6-6 met gecorrigeerde kansen &rarr; 1X2, Over/Under, BTTS.</li>'
+    + '<li><strong>6. H2H correctie:</strong> Onderlinge historie (min. 3 duels) wordt bijgemengd met dynamisch gewicht (max 15%).</li>'
+    + '</ul>'
+    + '<p style="font-style: italic; font-size: 11px;">Edge = modelkans &times; odds &minus; 1. Boven +5% &rarr; <strong style="color:var(--accent)">&#10003; Value bet</strong>.</p>'
+    + '</div></div>';
+
+  document.getElementById('detail-content').innerHTML = html;
+}
+
+function buildModel(oH, oD, oA, hf, af, hc, ac, h2h) {
+  // =============================================
+  // STAP 1: Basis lambda's uit odds
+  // WK = neutraal terrein → GEEN thuisvoordeel
+  // =============================================
+  var lH = 1.25, lA = 1.25;
+  if (oH && oD && oA) {
+    var tot = 1/oH + 1/oD + 1/oA;
+    var pH = (1/oH) / tot;
+    var pA = (1/oA) / tot;
+    // Neutraal: geen ×1.1 / ×0.9 multiplier
+    lH = Math.max(poisInv(pH + 0.5*(1-(pH+pA))), 0.3);
+    lA = Math.max(poisInv(pA + 0.5*(1-(pH+pA))), 0.3);
+  }
+
+  // =============================================
+  // STAP 2: Aanval + Verdediging meewegen
+  // λ_home = (aanval_thuis + defensie_zwakte_uit) / 2
+  // =============================================
+  if (hf && hf.matches_played > 0 && af && af.matches_played > 0) {
+    var atkH = hf.goals_scored_last_n / hf.matches_played;
+    var defH = hf.goals_conceded_last_n / hf.matches_played;
+    var atkA = af.goals_scored_last_n / af.matches_played;
+    var defA = af.goals_conceded_last_n / af.matches_played;
+
+    // Combineer aanvalskracht + defensieve zwakte tegenstander
+    var formLH = (atkH + defA) / 2;
+    var formLA = (atkA + defH) / 2;
+
+    // Blend: 60% markt, 40% vorm (hoger want nu atk+def)
+    lH = lH * 0.60 + formLH * 0.40;
+    lA = lA * 0.60 + formLA * 0.40;
+  } else {
+    // Fallback: slechts 1 team heeft data → alleen aanval, lagere weging
+    if (hf && hf.matches_played > 0) {
+      lH = lH * 0.75 + (hf.goals_scored_last_n / hf.matches_played) * 0.25;
+    }
+    if (af && af.matches_played > 0) {
+      lA = lA * 0.75 + (af.goals_scored_last_n / af.matches_played) * 0.25;
+    }
+  }
+
+  // =============================================
+  // STAP 3: Coach-tactiek modifier
+  // Pressing, profiel, lijn, formatie → λ bijstelling
+  // =============================================
+  var goalMod = 0;
+  if (hc && ac) {
+    // Twee hoog-pressende teams → open wedstrijd → meer goals
+    var pressH = hc.pressing_intensity != null ? hc.pressing_intensity : 0.5;
+    var pressA = ac.pressing_intensity != null ? ac.pressing_intensity : 0.5;
+    var avgPress = (pressH + pressA) / 2;
+    goalMod += (avgPress - 0.5) * 0.15;
+
+    // Coach profiel
+    var profiles = { attacking: 0.06, balanced: 0, defensive: -0.06 };
+    goalMod += (profiles[hc.profile] || 0);
+    goalMod += (profiles[ac.profile] || 0);
+
+    // Defensielijn: hoog = kwetsbaar voor counter = meer goals
+    var lines = { high: 0.04, mid: 0, low: -0.04 };
+    goalMod += (lines[hc.defensive_line] || 0);
+    goalMod += (lines[ac.defensive_line] || 0);
+
+    // Aanvallende formaties
+    var fmMod = { '4-3-3':0.03, '3-4-3':0.04, '4-2-3-1':0.02, '3-5-2':0.01,
+                  '5-4-1':-0.04, '5-3-2':-0.03, '4-5-1':-0.03, '4-4-2':0 };
+    goalMod += (fmMod[hc.preferred_formation] || 0);
+    goalMod += (fmMod[ac.preferred_formation] || 0);
+  }
+  lH *= (1 + goalMod);
+  lA *= (1 + goalMod);
+
+  // Clamp
+  lH = Math.max(lH, 0.2);
+  lA = Math.max(lA, 0.2);
+
+  // =============================================
+  // STAP 4: Dixon-Coles correlatie (ρ)
+  // Corrigeert onderschatting van 0-0, 1-0, 0-1
+  // =============================================
+  var rho = -0.05;
+  // Twee defensieve coaches → sterkere correctie
+  if (hc && ac && hc.profile === 'defensive' && ac.profile === 'defensive') rho = -0.12;
+  else if (goalMod > 0.08) rho = -0.02; // open wedstrijd → minder correctie
+
+  // =============================================
+  // STAP 5: Score-matrix met Dixon-Coles
+  // =============================================
+  var hw=0, dr=0, aw=0, ov=0, bt=0, sc=[];
+  for (var i=0; i<=6; i++) for (var j=0; j<=6; j++) {
+    var p = pois(lH,i) * pois(lA,j);
+    // Dixon-Coles correctie voor lage scores
+    if      (i===0 && j===0) p *= (1 - lH * lA * rho);
+    else if (i===1 && j===0) p *= (1 + lA * rho);
+    else if (i===0 && j===1) p *= (1 + lH * rho);
+    else if (i===1 && j===1) p *= (1 - rho);
+    p = Math.max(p, 0);
+
+    sc.push({i:i,j:j,p:p});
+    if (i>j) hw+=p; else if (i===j) dr+=p; else aw+=p;
+    if (i+j>2.5) ov+=p;
+    if (i>0 && j>0) bt+=p;
+  }
+  var t = hw+dr+aw;
+  hw /= t; dr /= t; aw /= t;
+
+  // =============================================
+  // STAP 6: H2H correctie
+  // Onderlinge historie bijmengen (max 15% gewicht)
+  // =============================================
+  if (h2h && h2h.total_matches && h2h.total_matches >= 3) {
+    var n = h2h.total_matches;
+    var h2hW = Math.min(n / 30, 0.15); // meer duels = meer gewicht
+
+    var hrH = (h2h.home_wins || 0) / n;
+    var hrD = (h2h.draws || 0) / n;
+    var hrA = (h2h.away_wins || 0) / n;
+
+    hw = hw * (1 - h2hW) + hrH * h2hW;
+    dr = dr * (1 - h2hW) + hrD * h2hW;
+    aw = aw * (1 - h2hW) + hrA * h2hW;
+
+    // Hernormaliseer
+    var t2 = hw + dr + aw;
+    hw /= t2; dr /= t2; aw /= t2;
+
+    // H2H over/under + BTTS
+    if (h2h.matches && h2h.matches.length >= 3) {
+      var ovCnt = 0, btCnt = 0;
+      h2h.matches.forEach(function(m) {
+        if (((m.home_score||0) + (m.away_score||0)) > 2.5) ovCnt++;
+        if ((m.home_score||0) > 0 && (m.away_score||0) > 0) btCnt++;
+      });
+      var h2hOv = ovCnt / h2h.matches.length;
+      var h2hBt = btCnt / h2h.matches.length;
+      ov = ov * (1 - h2hW) + h2hOv * h2hW;
+      bt = bt * (1 - h2hW) + h2hBt * h2hW;
+    }
+  }
+
+  sc.sort(function(a,b){return b.p-a.p;});
+  return { hw:hw, dr:dr, aw:aw, lH:lH, lA:lA, ov:ov, bt:bt, top:sc.slice(0,5) };
+}
+function pois(l, k) { var p=Math.exp(-l); for(var i=0;i<k;i++) p*=l/(i+1); return p; }
+function poisInv(p) { return Math.max(-Math.log(1-Math.min(p,0.999)),0.1); }
+function impP(oH, oD, oA, which) {
+  var tot = 1/oH + 1/oD + 1/oA;
+  var map = { h:(1/oH)/tot, d:(1/oD)/tot, a:(1/oA)/tot };
+  return (map[which]*100).toFixed(0);
+}
+
+function renderCoach(c, teamName) {
+  if (!c) return '<div><div class="coach-team-lbl">' + teamName + '</div><div style="font-size:12px;color:var(--muted)">Geen coachdata</div></div>';
+  var pressing = (c.pressing_intensity != null) ? (c.pressing_intensity * 100).toFixed(0) + '%' : '-';
+  var styles = (c.top_styles || []).map(function(s) {
+    return '<span class="style-pill">' + s.replace(/_/g,' ') + '</span>';
+  }).join('');
+  return '<div>'
+    + '<div class="coach-team-lbl">' + teamName + '</div>'
+    + '<div class="coach-name">' + c.name + '</div>'
+    + '<div class="coach-stat"><span>Formatie</span><span>' + (c.preferred_formation || '-') + '</span></div>'
+    + '<div class="coach-stat"><span>Profiel</span><span>' + (c.profile || '-') + '</span></div>'
+    + '<div class="coach-stat"><span>Pressing</span><span>' + pressing + '</span></div>'
+    + '<div class="coach-stat"><span>Defensielinie</span><span>' + (c.defensive_line || '-') + '</span></div>'
+    + (styles ? '<div class="style-pills">' + styles + '</div>' : '')
+    + '</div>';
+}
+
+function renderFormMatches(matches, teamName, teamId, formObj) {
+  var leagueNames = {27:'WK 2026',31:'Friendly',58:'WK Kwal. UEFA',59:'WK Kwal. CONMEBOL',60:'WK Kwal. CAF',61:'WK Kwal. AFC',62:'WK Kwal. CONCACAF',64:'Nations League',65:'CONCACAF NL'};
+  var rows = '';
+  if (matches && matches.length > 0) {
+    rows = matches.map(function(m) {
+      var teamIsHome = teamId ? (m.home_team_id === teamId) : (m.home_team === teamName || (m.home_team || '').toLowerCase() === (teamName || '').toLowerCase());
+      var opp = teamIsHome ? m.away_team : m.home_team;
+      var myG = teamIsHome ? m.home_score : m.away_score;
+      var opG = teamIsHome ? m.away_score : m.home_score;
+      var result = myG > opG ? 'W' : myG < opG ? 'L' : 'D';
+      var cls = result === 'W' ? 'fw' : result === 'L' ? 'fl' : 'fd';
+      var score = teamIsHome ? (m.home_score + '-' + m.away_score) : (m.away_score + '-' + m.home_score);
+      var loc = teamIsHome ? 'T' : 'U';
+      var league = leagueNames[m.league_id] || ('League ' + m.league_id);
+      var date = (m.event_date || '').slice(0, 10);
+      return '<tr>'
+        + '<td><div class="form-dot ' + cls + '">' + result + '</div></td>'
+        + '<td style="padding:5px 6px;font-size:12px;color:var(--muted);font-family:var(--mono);font-size:10px">' + loc + '</td>'
+        + '<td style="padding:5px 4px;font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + opp + '">' + opp + '</td>'
+        + '<td style="padding:5px 4px;font-family:var(--mono);font-size:12px;color:var(--muted)">' + score + '</td>'
+        + '<td style="padding:5px 4px;font-size:10px;color:var(--muted);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + league + '</td>'
+        + '<td style="padding:5px 4px;font-size:10px;color:var(--muted);font-family:var(--mono);text-align:right">' + date + '</td>'
+        + '</tr>';
+    }).join('');
+    rows = '<table style="width:100%;border-collapse:collapse">' + rows + '</table>';
+  } else if (formObj && formObj.form_string) {
+    var dots = formObj.form_string.split('').map(function(c) {
+      var cls = c==='W' ? 'fw' : c==='L' ? 'fl' : 'fd';
+      return '<div class="form-dot ' + cls + '">' + c + '</div>';
+    }).join('');
+    rows = '<div style="display:flex;gap:5px;margin-bottom:10px">' + dots + '</div>'
+      + (formObj.goals_scored_last_n != null ? statRow('Goals voor', formObj.goals_scored_last_n) : '')
+      + (formObj.goals_conceded_last_n != null ? statRow('Goals tegen', formObj.goals_conceded_last_n) : '');
+  } else {
+    rows = '<div style="font-size:12px;color:var(--muted);padding:.5rem 0">Geen data beschikbaar</div>';
+  }
+  return rows;
+}
+
+function renderH2H(h2h, home, away) {
+  if (!h2h || !h2h.matches || !h2h.matches.length) {
+    return '<div style="font-size:12px;color:var(--muted);padding:.5rem 0">Geen onderlinge duels gevonden</div>';
+  }
+  var hW = h2h.home_wins || 0; var aW = h2h.away_wins || 0; var dr = h2h.draws || 0;
+  var total = h2h.total_matches || (hW + aW + dr);
+  var summary = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;text-align:center">'
+    + '<div style="background:var(--surface2);border-radius:8px;padding:10px">'
+    + '<div style="font-size:24px;font-weight:700;color:var(--accent2)">' + hW + '</div>'
+    + '<div style="font-size:11px;color:var(--muted)">' + home + '</div></div>'
+    + '<div style="background:var(--surface2);border-radius:8px;padding:10px">'
+    + '<div style="font-size:24px;font-weight:700;color:var(--warn)">' + dr + '</div>'
+    + '<div style="font-size:11px;color:var(--muted)">Gelijk</div></div>'
+    + '<div style="background:var(--surface2);border-radius:8px;padding:10px">'
+    + '<div style="font-size:24px;font-weight:700;color:var(--accent)">' + aW + '</div>'
+    + '<div style="font-size:11px;color:var(--muted)">' + away + '</div></div></div>';
+  var rows = h2h.matches.slice(0, 6).map(function(m) {
+    var isHW = m.winner === 'home'; var isAW = m.winner === 'away';
+    var wc = isHW ? 'wh' : isAW ? 'wa' : 'wd';
+    var wl = isHW ? home : isAW ? away : 'Gelijk';
+    var date = (m.date || m.event_date || '').slice(0, 7);
+    return '<div class="h2h-row">'
+      + '<span style="color:var(--muted);font-family:var(--mono);font-size:10px">' + date + '</span>'
+      + '<span style="font-family:var(--mono);font-weight:500">' + (m.home_score || 0) + '&ndash;' + (m.away_score || 0) + '</span>'
+      + '<span class="h2h-winner ' + wc + '">' + wl + '</span></div>';
+  }).join('');
+  return summary + rows;
+}
+
+function weatherLabel(code) {
+  if (code == null) return '';
+  if (code === 0) return '&#9728;';
+  if (code <= 3) return '&#9925;';
+  if (code <= 48) return '&#127787;';
+  if (code <= 67) return '&#127783;';
+  return '&#9928;';
+}
+
+function probRow(label, pct, val, fillCls, color) {
+  return '<div class="prob-row">'
+    + '<div class="prob-label"><span>' + label + '</span><span style="color:' + color + '">' + pct + '</span></div>'
+    + '<div class="prob-bar"><div class="prob-fill ' + fillCls + '" style="width:' + (val*100) + '%"></div></div>'
+    + '</div>';
+}
+function statRow(lbl, val) { return '<div class="stat-row"><span class="stat-lbl">' + lbl + '</span><span class="stat-val">' + val + '</span></div>'; }
+function oddsRow(lbl, val) { return '<div class="odds-row"><span class="odds-label">' + lbl + '</span><span class="odds-val">' + val + '</span></div>'; }
+function valueRow(label, modelStr, oddsStr, e) {
+  return '<div class="value-row">'
+    + '<div><div class="value-market">' + label + '</div><div class="value-detail">' + modelStr + ' vs ' + oddsStr + '</div></div>'
+    + '<div style="text-align:right">' + edgeBadge(e) + rec(e) + '</div>'
+    + '</div>';
+}
+function edge(mp, bo) { if (!bo || !mp) return null; return +((mp*bo-1)*100).toFixed(1); }
+function edgeBadge(e) {
+  if (e === null) return '<span class="edge-badge edge-neu">&mdash;</span>';
+  var s = e>0?'+':'', c = e>3?'edge-pos':e<-3?'edge-neg':'edge-neu';
+  return '<span class="edge-badge ' + c + '">' + s + e + '%</span>';
+}
+function rec(e) {
+  if (e===null) return '<div class="rec neutral">Geen odds</div>';
+  if (e>5) return '<div class="rec bet">&#10003; Value bet</div>';
+  if (e<-5) return '<div class="rec skip">&#10007; Sla over</div>';
+  return '<div class="rec neutral">Neutraal</div>';
+}
+function fO(o) { return o ? (+o).toFixed(2) : '&mdash;'; }
+function fP(p) { return ((p||0)*100).toFixed(1) + '%'; }
+
+window.onload = function() {
+  BSD_KEY = cleanKey(load('bsd_key') || '');
+  if (BSD_KEY) {
+    document.getElementById('bsd-key').value = BSD_KEY;
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadMatches();
+  }
+};
+</script>
+</body>
+</html>

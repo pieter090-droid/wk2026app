@@ -1377,6 +1377,18 @@ window.onload = function() {
     loadMatches();
   }
 };
+window.addEventListener('load', function() {
+  var savedKey = load('bsd_key');
+
+  if (savedKey) {
+    document.getElementById('bsd-key').value = savedKey;
+    BSD_KEY = savedKey;
+
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    loadMatches();
+  
 </script>
 </body>
 </html>
